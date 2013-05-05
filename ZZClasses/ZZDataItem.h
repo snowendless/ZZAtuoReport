@@ -2,11 +2,11 @@
 #include <string>
 class CZZDataItem
 {
-	std::string m_stringName;
+	std::wstring m_stringName;
 public:
-	std::string GetName() const { return m_stringName; }
-	void SetName(std::string val) { m_stringName = val; }
-	virtual std::string GetValueString() = 0;
+	std::wstring GetName() const { return m_stringName; }
+	void SetName(std::wstring val) { m_stringName = val; }
+	virtual std::wstring GetValueString() = 0;
 	CZZDataItem(void);
 	~CZZDataItem(void);
 };

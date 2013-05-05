@@ -7,7 +7,7 @@ class CZZDoubleDataItem :
 public:
 	double GetValue() const { return m_dValue; }
 	void SetValue(double val) { m_dValue = val; }
-	virtual std::string GetValueString();
+	virtual std::wstring GetValueString();
 	CZZDoubleDataItem(void);
 	~CZZDoubleDataItem(void);
 };
