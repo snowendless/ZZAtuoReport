@@ -54,6 +54,7 @@ HRESULT CZZWordDoc::GenerateWordDoc(std::wstring templatePath,std::wstring Locat
 			CWordBookmark t_bookMark = t_myBookMarks.Item(COleVariant(temp->GetName().c_str()));
 			CWordRange tBMRange = t_bookMark.get_Range();
 			tBMRange.put_Text(temp->GetValueString().c_str());
+			t_bookMark.put_End(tBMRange.get_End());
 			tBMRange.ReleaseDispatch();
 			t_bookMark.ReleaseDispatch();
 		}

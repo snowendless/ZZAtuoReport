@@ -11,6 +11,7 @@ CZZExcel2Word::CZZExcel2Word(void)
 {
 	m_stringWordDocKey =  _T("管道序号");
 	m_stringWordTemplatePath = _T("C:\\Users\\Administrator.UXEXD6YTDEVZ8JF\\AppData\\Roaming\\Microsoft\\Templates\\ZZTemplate.dot");
+	m_iValueNameRow = 2;
 }
 
 
@@ -42,6 +43,28 @@ HRESULT CZZExcel2Word::TransferExcelFiles2Word(std::vector<std::wstring> vecExce
 		BuildDataFromExcelFile(temp,m_stringWordDocKey);
 	}
 	return S_OK;
+}
+static std::wstring GetStringFromExcelCell(CExcelRange& useRange)
+{
+	COleVariant keyValue = useRange.get_Value2();	
+	std::wstring itemString;
+	if (keyValue.vt != VT_BSTR)
+	{
+		if (keyValue.vt == VT_R8)
+		{
+			std::wostringstream ostr;
+			ostr<<keyValue.dblVal;
+			itemString = ostr.str();
+		}
+	}
+	else
+	{
+		if (keyValue.bstrVal != NULL)
+		{
+			itemString = keyValue.bstrVal;
+		}	
+	}
+	return itemString;
 }
 HRESULT CZZExcel2Word::BuildDataFromExcelFile(std::wstring ExcelFile,std::wstring stringDocKey)
 {
@@ -83,18 +106,14 @@ HRESULT CZZExcel2Word::BuildDataFromExcelFile(std::wstring ExcelFile,std::wstrin
 		long iStartRow = useRange.get_Row();
 		int nColumn = useRange.get_Count();
 		long iStartCol = useRange.get_Column();
-		long iValueNameRow = 2;
+		long iValueNameRow = m_iValueNameRow;
+		//find keyName Column index
 		for (int iColIdx = iStartCol; iColIdx <= nColumn ; iColIdx++)
 		{
 			useRange = wsMysheet.get_Cells();
 			COleVariant keyValue=useRange.get_Item(_variant_t(iValueNameRow),_variant_t(iColIdx));
 			useRange = keyValue.pdispVal;
-			keyValue = useRange.get_Value2();		
-			if (keyValue.bstrVal == NULL|| keyValue.vt != VT_BSTR)
-			{
-				continue;
-			}
-			std::wstring itemString = keyValue.bstrVal;
+			std::wstring itemString = GetStringFromExcelCell(useRange);
 			if (stringDocKey == itemString )
 			{
 				iKeyColumnIdx = iColIdx;
@@ -112,26 +131,7 @@ HRESULT CZZExcel2Word::BuildDataFromExcelFile(std::wstring ExcelFile,std::wstrin
 			useRange = wsMysheet.get_Cells();
 			COleVariant keyValue=useRange.get_Item(_variant_t(iRodIdx),_variant_t(iKeyColumnIdx));
 			useRange = keyValue.pdispVal;
-			keyValue = useRange.get_Value2();		
-
-			std::wstring keyitemString;
-			if (keyValue.vt != VT_BSTR)
-			{
-				if (keyValue.vt == VT_R8)
-				{
-					std::wostringstream ostr;
-					ostr<<keyValue.dblVal;
-					keyitemString = ostr.str();
-				}
-			}
-			else
-			{
-				if (keyValue.bstrVal == NULL)
-				{
-					continue;
-				}
-				keyitemString = keyValue.bstrVal;
-			}
+			std::wstring keyitemString = GetStringFromExcelCell(useRange);
 			if (keyitemString.empty())
 			{
 				continue;
@@ -157,12 +157,7 @@ HRESULT CZZExcel2Word::BuildDataFromExcelFile(std::wstring ExcelFile,std::wstrin
 				useRange = wsMysheet.get_Cells();
 				keyValue=useRange.get_Item(_variant_t(iRodIdx),_variant_t(iColIdx));
 				useRange = keyValue.pdispVal;
-				keyValue = useRange.get_Value2();	
-				if (keyValue.bstrVal == NULL|| keyValue.vt != VT_BSTR)
-				{
-					continue;
-				}
-				std::wstring valueitemString = keyValue.bstrVal;
+				std::wstring valueitemString  = GetStringFromExcelCell(useRange);
 				if (valueitemString.empty())
 				{
 					//无效数据
@@ -171,13 +166,8 @@ HRESULT CZZExcel2Word::BuildDataFromExcelFile(std::wstring ExcelFile,std::wstrin
 				//查找这个值对应的名字
 				useRange = wsMysheet.get_Cells();
 				keyValue=useRange.get_Item(_variant_t(iValueNameRow),_variant_t(iColIdx));
-				useRange = keyValue.pdispVal;
-				keyValue = useRange.get_Value2();		
-				if (keyValue.bstrVal == NULL|| keyValue.vt != VT_BSTR)
-				{
-					continue;
-				}			
-				std::wstring valuenameitemString = keyValue.bstrVal;
+				useRange = keyValue.pdispVal;	
+				std::wstring valuenameitemString = GetStringFromExcelCell(useRange);
 
 				if (valuenameitemString.empty())
 				{

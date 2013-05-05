@@ -6,6 +6,7 @@ class CZZExcel2Word
 {
 	std::wstring m_stringWordDocKey;
 	std::wstring m_stringWordTemplatePath;
+	int m_iValueNameRow;
 	std::vector<PZZWordDoc> m_vecWordDoc;
 	PZZWordDoc GetDocFromKeyString(std::wstring key);
 	PZZWordDoc CreateDoc(std::wstring key);
@@ -16,6 +17,7 @@ public:
 	HRESULT ExportDataToWordDoc(std::wstring LocationFolder);
 	HRESULT TransferExcelFiles2Word(std::vector<std::wstring> vecExcelFiles,std::wstring wordDocLocationFolder);
 	HRESULT BuildDataFromExcelFile(std::wstring ExcelFile,std::wstring stringDocKey);
+
 	CZZExcel2Word(void);
 	~CZZExcel2Word(void);
 
