@@ -11,9 +11,9 @@ CZZDoubleDataItem::CZZDoubleDataItem(void)
 CZZDoubleDataItem::~CZZDoubleDataItem(void)
 {
 }
- std::string CZZDoubleDataItem::GetValueString()
+ std::wstring CZZDoubleDataItem::GetValueString()
  {
-	 std::ostringstream   ostr;
+	 std::wostringstream   ostr;
 
 	 return ostr.str();
  }
