@@ -7,19 +7,124 @@
 #include "..\CExcelWorksheets.h"
 #include "..\CExcelRange.h"
 #include <sstream>
-CZZExcel2Word::CZZExcel2Word(void)
+CZZExcel2Word::CZZExcel2Word()
 {
 	m_stringWordDocKey =  _T("管道序号");
-	m_stringWordTemplatePath = _T("C:\\Users\\Administrator.UXEXD6YTDEVZ8JF\\AppData\\Roaming\\Microsoft\\Templates\\ZZTemplate.dot");
 	m_iValueNameRow = 2;
+	InitExportSettings();
 }
+#define INI_EXCEL_APPNAME _T("读取Excel规则")
+#define INI_EXCEL_KEYNAME_VALUENAMEROWINDEX _T("表头行")
 
-
+#define INI_REPORT_APPNAME _T("报告属性")
+#define INI_REPORT_KEYNAME _T("报告关键字")
+#define INI_DATAMAP_APPNAME _T("数据匹配")
+#define MAX_LENGTH 1024
+#define INI_FILE_NAME _T("ZZ.ini")
+#define Template_FILE_NAME _T("ZZTemplate.dot")
+std::wstring CZZExcel2Word::GetCurrentDir()
+{
+	TCHAR szBuf[MAX_PATH];
+	ZeroMemory(szBuf,MAX_PATH);
+	std::wstring initFilePath;
+	if (GetCurrentDirectory(MAX_PATH,szBuf) > 0)	
+	{
+		initFilePath = szBuf;
+		initFilePath += _T("\\");
+	}
+	else
+	{
+		initFilePath = _T("C:\\");
+	}
+	return initFilePath;
+}
+HRESULT CZZExcel2Word::InitExportSettings()
+{
+	std::wstring curdir = GetCurrentDir();
+	std::wstring initFilePath;
+	m_stringWordTemplatePath = curdir + Template_FILE_NAME;
+	initFilePath = curdir+INI_FILE_NAME;
+	return InitExportSettings(initFilePath.c_str());
+}
+//遍历ini文件
+HRESULT CZZExcel2Word::InitExportSettings(LPCTSTR pFilePath)  
+{  
+	if (!PathFileExists(pFilePath))
+	{
+		WritePrivateProfileString(INI_EXCEL_APPNAME,INI_EXCEL_KEYNAME_VALUENAMEROWINDEX,_T("2"),pFilePath);
+		WritePrivateProfileString(INI_REPORT_APPNAME,INI_REPORT_KEYNAME,_T("管道序号"),pFilePath);
+		WritePrivateProfileString(INI_DATAMAP_APPNAME,_T("管道名称"),_T("管道名称"),pFilePath);
+	}
+	// TODO: Add your control notification handler code here  
+	TCHAR strAppNameTemp[1024];//所有AppName的返回值  
+	TCHAR strKeyNameTemp[1024];//对应每个AppName的所有KeyName的返回值  
+	TCHAR strReturnTemp[1024];//返回值  
+	DWORD dwKeyNameSize;//对应每个AppName的所有KeyName的总长度  
+	//所有AppName的总长度  
+	DWORD dwAppNameSize = GetPrivateProfileString(NULL,NULL,NULL,strAppNameTemp,MAX_LENGTH,pFilePath);  
+	if(dwAppNameSize>0)  
+	{  
+		TCHAR *pAppName = new TCHAR[dwAppNameSize];  
+		int nAppNameLen=0;  //每个AppName的长度  
+		for(DWORD i = 0;i<dwAppNameSize;i++)  
+		{  
+			pAppName[nAppNameLen++]=strAppNameTemp[i];  
+			if(strAppNameTemp[i]==0)  
+			{  
+				dwKeyNameSize = GetPrivateProfileString(pAppName,NULL,NULL,strKeyNameTemp,1024,pFilePath);  
+				if(dwAppNameSize>0)  
+				{  
+					TCHAR *pKeyName = new TCHAR[dwKeyNameSize];  
+					int nKeyNameLen=0;    //每个KeyName的长度  
+					for(DWORD j = 0;j<dwKeyNameSize;j++)  
+					{  
+						pKeyName[nKeyNameLen++]=strKeyNameTemp[j];  
+						if(strKeyNameTemp[j]==0)  
+						{  
+							if(GetPrivateProfileString(pAppName,pKeyName,NULL,strReturnTemp,1024,pFilePath))  
+							{
+								NULL;
+							}
+							//my code here. szg
+							std::wstring tempappstr = pAppName;
+							if (tempappstr == INI_REPORT_APPNAME)
+							{
+								m_stringWordDocKey = strReturnTemp;
+							}
+							if (tempappstr == INI_DATAMAP_APPNAME)
+							{
+								std::wstring tempbookmarkstr = pKeyName;
+								std::wstring tempReturnstr = strReturnTemp;
+								AddBookMarkDataPair(tempReturnstr,tempbookmarkstr);
+							}
+							if (tempappstr == INI_EXCEL_APPNAME)
+							{
+								std::wstring tempkeyname = pKeyName;
+								if (tempkeyname == INI_EXCEL_KEYNAME_VALUENAMEROWINDEX)
+								{
+									m_iValueNameRow = _ttoi(strReturnTemp);
+								} 
+							}
+							memset(pKeyName,0,dwKeyNameSize);  
+							nKeyNameLen=0;  
+						}  
+					}  
+					delete[]pKeyName;  
+				}  
+				memset(pAppName,0,dwAppNameSize);  
+				nAppNameLen=0;  
+			}  
+		}  
+		delete[]pAppName;  
+	}  
+	return S_OK;
+}  
 CZZExcel2Word::~CZZExcel2Word(void)
 {
 	ClearWordDoc();
-
 }
+
+
 HRESULT CZZExcel2Word::ExportDataToWordDoc(std::wstring LocationFolder)
 {
 	std::vector<PZZWordDoc>::iterator it;
@@ -27,13 +132,16 @@ HRESULT CZZExcel2Word::ExportDataToWordDoc(std::wstring LocationFolder)
 	for (it = m_vecWordDoc.begin(); it != m_vecWordDoc.end(); ++it)
 	{
 		PZZWordDoc temp = *it;
-		temp->GenerateWordDoc(m_stringWordTemplatePath,LocationFolder);
-		break;
+		temp->GenerateWordDoc(LocationFolder);
 	}
 	return S_OK;
 }
-
-HRESULT CZZExcel2Word::TransferExcelFiles2Word(std::vector<std::wstring> vecExcelFiles,std::wstring wordDocLocationFolder)
+HRESULT CZZExcel2Word::AddBookMarkDataPair(std::wstring DataName,std::wstring BookMarkName)
+{
+	m_mapDataItem2BookMark.insert(std::pair<std::wstring, std::wstring>(BookMarkName, DataName));
+	return S_OK;
+}
+HRESULT CZZExcel2Word::TransferExcelFiles2Word(std::vector<std::wstring> vecExcelFiles)
 {
 	std::vector<std::wstring>::iterator it;
 
@@ -144,6 +252,7 @@ HRESULT CZZExcel2Word::BuildDataFromExcelFile(std::wstring ExcelFile,std::wstrin
 				{
 					continue;
 				}
+				SetExportReportSetting(pDoc);
 				m_vecWordDoc.push_back(pDoc);
 			}
 
@@ -223,4 +332,10 @@ void CZZExcel2Word::ClearWordDoc()
 		delete temp;
 	}
 	m_vecWordDoc.clear();
+}
+
+void CZZExcel2Word::SetExportReportSetting( PZZWordDoc pDoc )
+{
+	pDoc->SetMapDataItem2BookMark(m_mapDataItem2BookMark);
+	pDoc->SetStringWordTemplatePath(m_stringWordTemplatePath);
 }

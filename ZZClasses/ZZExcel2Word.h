@@ -1,24 +1,32 @@
 #pragma once
 #include <string>
 #include <vector>
+
 #include "ZZWordDoc.h"
 class CZZExcel2Word
 {
-	std::wstring m_stringWordDocKey;
+	std::map<std::wstring,std::wstring> m_mapDataItem2BookMark;
+
 	std::wstring m_stringWordTemplatePath;
+	std::wstring m_stringWordDocKey;
 	int m_iValueNameRow;
 	std::vector<PZZWordDoc> m_vecWordDoc;
 	PZZWordDoc GetDocFromKeyString(std::wstring key);
 	PZZWordDoc CreateDoc(std::wstring key);
 	void ClearWordDoc();
 public:
-	std::wstring GetStringWordTemplatePath() const { return m_stringWordTemplatePath; }
+	static std::wstring GetCurrentDir();
 	void SetStringWordTemplatePath(std::wstring val) { m_stringWordTemplatePath = val; }
+	HRESULT InitExportSettings();
+	HRESULT AddBookMarkDataPair(std::wstring BookMarkName,std::wstring DataName);
 	HRESULT ExportDataToWordDoc(std::wstring LocationFolder);
-	HRESULT TransferExcelFiles2Word(std::vector<std::wstring> vecExcelFiles,std::wstring wordDocLocationFolder);
+	HRESULT TransferExcelFiles2Word(std::vector<std::wstring> vecExcelFiles);
 	HRESULT BuildDataFromExcelFile(std::wstring ExcelFile,std::wstring stringDocKey);
 
-	CZZExcel2Word(void);
+	void SetExportReportSetting( PZZWordDoc pDoc );
+
+	HRESULT InitExportSettings(LPCTSTR pFilePath);
+	CZZExcel2Word();
 	~CZZExcel2Word(void);
 
 

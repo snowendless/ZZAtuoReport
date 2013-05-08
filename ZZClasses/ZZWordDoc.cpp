@@ -7,18 +7,41 @@
 #include "..\CWordBookmarks.h"
 #include "..\CWordBookmark.h"
 #include "..\CWordRange.h"
+#include <algorithm>
 CZZWordDoc::CZZWordDoc(void)
 {
+	m_stringWordTemplatePath = _T("C:\\Users\\Administrator.UXEXD6YTDEVZ8JF\\AppData\\Roaming\\Microsoft\\Templates\\ZZTemplate.dot");
 }
 
 
 CZZWordDoc::~CZZWordDoc(void)
 {
-	ClearDataItem();
-
-	
+	ClearDataItem();	
 }
-HRESULT CZZWordDoc::GenerateWordDoc(std::wstring templatePath,std::wstring LocationFolder)
+HRESULT CZZWordDoc::GetBookMarkFromDataname(std::wstring dataName,std::vector<std::wstring>& vecBookMarkStrings)
+{
+	std::map<std::wstring, std::wstring>::iterator iter;
+
+	for(iter = m_mapDataItem2BookMark.begin(); iter != m_mapDataItem2BookMark.end(); iter++)
+	{
+		if (iter->second == dataName)
+		{
+			vecBookMarkStrings.push_back(iter->first);
+		}
+	}
+	if( std::find(vecBookMarkStrings.begin(),vecBookMarkStrings.end(),dataName) == vecBookMarkStrings.end())
+	{
+		vecBookMarkStrings.push_back(dataName);
+	}
+	return S_OK;
+}
+
+HRESULT CZZWordDoc::AddBookMarkDataPair(std::wstring DataName,std::wstring BookMarkName)
+{
+	m_mapDataItem2BookMark.insert(std::pair<std::wstring, std::wstring>(BookMarkName, DataName));
+	return S_OK;
+}
+HRESULT CZZWordDoc::GenerateWordDoc(std::wstring LocationFolder)
 {
 	CWordApplication WordApp; 
 
@@ -28,7 +51,7 @@ HRESULT CZZWordDoc::GenerateWordDoc(std::wstring templatePath,std::wstring Locat
 		exit(1);   
 	}  
 	CWordDocuments WordDocuments = WordApp.get_Documents();
-	CComVariant tpl(templatePath.c_str()),Visble,DocType(0),NewTemplate(false);
+	CComVariant tpl(m_stringWordTemplatePath.c_str()),Visble,DocType(0),NewTemplate(false);
 	CWordDocument wordProduct=WordDocuments.Add(&tpl,&NewTemplate,&DocType,&Visble);
 
 	
@@ -49,18 +72,25 @@ HRESULT CZZWordDoc::GenerateWordDoc(std::wstring templatePath,std::wstring Locat
 		{
 			continue;
 		}
-		try
+		std::vector<std::wstring> bookMarksToFill;
+		GetBookMarkFromDataname(temp->GetName(),bookMarksToFill);
+		std::vector<std::wstring>::iterator it2;
+		for (it2 = bookMarksToFill.begin(); it2 != bookMarksToFill.end(); ++it2)
 		{
-			CWordBookmark t_bookMark = t_myBookMarks.Item(COleVariant(temp->GetName().c_str()));
-			CWordRange tBMRange = t_bookMark.get_Range();
-			tBMRange.put_Text(temp->GetValueString().c_str());
-			t_bookMark.put_End(tBMRange.get_End());
-			tBMRange.ReleaseDispatch();
-			t_bookMark.ReleaseDispatch();
-		}
-		catch (...)
-		{
-			continue;
+			std::wstring tempstr = *it2;
+			try
+			{
+				CWordBookmark t_bookMark = t_myBookMarks.Item(COleVariant(tempstr.c_str()));
+				CWordRange tBMRange = t_bookMark.get_Range();
+				tBMRange.put_Text(temp->GetValueString().c_str());
+				t_bookMark.put_End(tBMRange.get_End());
+				tBMRange.ReleaseDispatch();
+				t_bookMark.ReleaseDispatch();
+			}
+			catch (...)
+			{
+				continue;
+			}
 		}
 	}
 
